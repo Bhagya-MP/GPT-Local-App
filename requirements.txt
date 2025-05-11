@@ -1,0 +1,16 @@
+openai
+pyaudio
+speechrecognition
+python-dotenv
+pyttsx3
+playsound
+ollama
+gTTS
+flask
+loguru
+mcp
+langchain_community
+azure-cognitiveservices-speech
+
+
+

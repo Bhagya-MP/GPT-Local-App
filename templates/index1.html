@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChatGPT Styled App</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      height: 100vh;
+      background-color: #343541;
+      color: white;
+      padding-right: 40px;
+    }
+
+    /* Sidebar */
+    #sidebar {
+      width: 260px;
+      background-color: #202123;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+      overflow: hidden;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
+    }
+
+    #sidebar.collapsed .sidebar-header button:not(#toggle-sidebar),
+    #sidebar.collapsed #file-list {
+      display: none;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem;
+      border-bottom: 1px solid #444;
+    }
+
+    #toggle-sidebar {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    #file-list {
+      padding: 1rem;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .file-link {
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 5px;
+      color: #e0e0e0;
+    }
+
+    .file-link:hover {
+      background-color: #3e3f4b;
+    }
+
+    /* Main */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    #conversation {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+
+    .message {
+      margin: 0.5rem 0;
+      padding: 1rem;
+      border-radius: 10px;
+      max-width: 75%;
+      width: fit-content; 
+      word-wrap: break-word;
+    }
+
+    .message table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 0.5rem;
+      color: white;
+    }
+
+    .message th,
+    .message td {
+      border: 1px solid #888;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .message th {
+      background-color: #2c2d35;
+    }
+
+    .user {
+      background-color: #3e3f4b;
+      align-self: flex-end;
+      margin-left: 1000px; 
+      margin-left: auto;
+      margin-right: 50px;
+    }
+
+    /* Align AI messages to the left */
+    .ai {
+      background-color: #444654;
+      align-self: flex-start;
+      margin-right: 100px;
+      margin-left: 100px;
+    }
+
+    #controls {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      border-top: 1px solid #444;
+      background-color: #343541;
+    }
+
+    #mic-btn, #stop-btn {
+      background-color: #343541;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-left: 5px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      transition: background-color 0.3s ease;
+    }
+
+    #mic-btn:hover{
+      background-color: #7d7d81;
+    }
+
+    #send-btn {
+      margin-left: 10px;
+      margin-right: 80px;
+      padding: 10px;
+      background-color: #40414f;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    #send-btn:hover {
+      background-color: #7d7d81;
+    }
+
+    #mute-btn {
+      background-color: #343541;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #mute-btn:hover .icon {
+      color: #ff4f4f;
+    }
+
+    .icon-upload {
+      background-color: #343541;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .icon-upload:hover {
+      background-color: #7d7d81;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .input_box{
+      margin-left: 100px; 
+      margin-right: 10px;
+      width: 90%;
+      box-sizing: border-box;
+    }
+
+    /* New design for buttons */
+    
+
+    /* ---------------------------------------- */
+
+    #name {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #40414f;
+      color: white;
+    }
+
+    #top-bar {
+      display: flex;
+      gap: 10px;
+      padding: 1rem;
+      background-color: #343541;
+      border-bottom: 1px solid #444;
+    }
+
+    select {
+      background-color: #40414f;
+      color: white;
+      border: none;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #new-chat-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    #new-chat-btn:hover {
+      color: #364b68;
+    }
+
+    .gptHeader{
+      font-family: 'Inter', sans-serif; 
+      font-weight: 600;
+      font-size: 20px; 
+      margin-right: 10px;
+      margin-top: 5px;
+      color: #FFFFFF;
+    }
+
+    /* Welcome screen buttons n msgs */
+    #welcome-container {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+    }
+
+    #welcome-message {
+      font-size: 34px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    #welcome-input {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background-color: #40414f;
+      border-radius: 12px;
+      width: fit-content;
+      margin: 0 auto;
+    }
+
+    #welcome-input-box {
+      width: 300px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #40414f;
+      font-size: 14px;
+      background: #40414f;
+      color: #ddd;
+    }
+
+    #welcome-input button,
+    .icon-upload {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    #file-upload {
+      display: none;
+    }
+
+    .icon-upload {
+      margin-top: 2px;
+      padding: 6px 10px;
+      border-radius: 60%;
+      background-color: #40414f;
+    }
+
+    .icon-upload:hover {
+      background-color: #7d7d81;
+    }
+
+    #welcome-mic-btn {
+      /* background-color: #2f7e59; */
+      background-color: #343541;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-left: 5px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      transition: background-color 0.3s ease;
+    }
+
+    #welcome-mic-btn:hover{
+      background-color: #7d7d81;
+    }
+
+    #welcome-send-btn {
+      margin-left: 10px;
+      margin-right: 10px;
+      padding: 10px;
+      background-color: #40414f;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    #welcome-send-btn:hover {
+      background-color: #7d7d81;
+    }
+
+    /* Drop down with delete button */
+    .menu-container {
+      position: relative;
+      display: inline-block;
+      margin-left: auto;
+      margin-right: 50px;
+    }
+
+    .dot-icon {
+      cursor: pointer;
+      font-size: 23px;
+      user-select: none;
+    }
+
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: 30px;
+      right: 0;
+      background-color: #343541;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      overflow: hidden;
+      z-index: 1;
+      min-width: 120px;
+    }
+
+    .dropdown button {
+      padding: 10px 16px;
+      display: block;
+      width: 100%;
+      border: none;
+      background: none;
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+      color: white;
+    }
+
+    .dropdown button:hover {
+      background-color: #7d7d81;
+    }
+
+    .dropdown .delete-btn {
+      color: red;
+      font-weight: bold;
+    }
+
+  </style>
+
+</head>
+<body>
+
+  <div id="sidebar" class="collapsed">
+    <div class="sidebar-header">
+      <button id="toggle-sidebar">☰</button>
+    </div>
+    <div id="file-list">No saved conversations</div>
+  </div>
+
+  <div id="main">
+    <div id="top-bar">
+      <button id="new-chat-btn" title="Start a new chat" style="margin-top: 5px;margin-left: 1px;">🗨️</button>
+      <h9 class= "gptHeader">ChatGPT</h9>
+      <select id="model" style="width: 130px; margin-right: 20px;">
+        <option value="gpt-4o-mini">GPT-4o-mini</option>
+        <option value="gpt-4o">GPT-4o</option>
+        <option value="gpt-4">GPT-4</option>
+        <option value="gpt-4o-plus">GPT-4o+</option>
+        <option value="gemma3:4b" selected>gemma3:4b</option>
+        <option value="llama3.1:8b">llama3.1:8b</option>
+        <option value="llama3.3:70b">llama3.3:70b</option>
+        <option value="gemma3:27b">gemma3:27b</option>
+        <option value="llama3.2-vision:90b">llama3.2-vision:90b</option>
+      </select>
+
+      <!-- <button id="delete-chat-btn" title="Delete chat">🗑️</button> -->
+      <!-- 3 dot button with detele button -->
+      <div class="menu-container">
+        <div class="dot-icon" onclick="toggleDropdown()">⋮</div>
+        <div class="dropdown" id="dropdownMenu">
+          <!-- <button onclick="handleEdit()">Edit</button> -->
+          <button onclick="handleShare()">Share</button>
+          <button class="delete-btn" onclick="handleDelete()">Delete</button>
+        </div>
+      </div>
+
+
+      <a href="https://www.evisionmicro.com/" target="_blank" style="position: fixed; top: -6px; right: 10px; bottom: 20px; z-index: 1000;">
+        <img src="https://github.com/Bhagya-MP/MCPbot/blob/main/1630633752705-removebg-preview.png?raw=true" 
+             alt="Profile" 
+             style="width: 90px; height: 75px; border-radius: 10%; cursor: pointer;" />
+      </a>
+    </div>
+
+    <div id="welcome-container" style="margin-top: 50px;">
+      <div id="welcome-message">What can I help with?</div>
+      <div id="welcome-input">
+        <input type="text" id="welcome-input-box" placeholder="Ask anything" style="color: #ddd;"/>
+        <button id="welcome-mic-btn" title="Start Conversation">🎤</button>
+        <button id="welcome-mute-btn" title="Stop AI Voice" style="display: none;">🔇</button>
+        <label for="file-upload" class="icon-upload">+</label>
+        <input type="file" id="file-upload" accept=".pdf,image/*">
+        <!-- <button id="welcome-send-btn">➤</button> -->
+      </div>
+    </div>
+    
+    <div id="conversation"></div>
+
+    <div id="controls" style="display: none;">
+      <input type="text" id="name" class="input_box" placeholder="Ask anything"/>
+      <button id="mic-btn" title="Start Conversation">🎤</button>
+      <button id="mute-btn" title="Stop AI Voice" style="display: none;">🔇</button>
+      <label for="file-upload" class="icon-upload">+</label>
+      <input type="file" id="file-upload" accept=".pdf,image/*">
+
+      <!-- <button id="send-btn" title="Send">➤</button> -->
+    </div>
+  </div>
+
+  <script>
+    let recognition;
+    let isListening = false;
+    let selectedModel = "gemma3:4b";
+    let voiceMode = false;
+    let isNewChat = true;
+
+    // User id creation------------------------------------------------------------------------
+    if (!localStorage.getItem("userId")) {
+        const userId = crypto.randomUUID();  // ✅ Generates a unique, persistent ID
+        localStorage.setItem("userId", userId);
+    }
+
+    const userId = localStorage.getItem("userId");
+
+    // ----------------------------------------------------------------------------------------
+
+    // Function to update the selected model when the user changes it
+    const modelSelect = document.getElementById('model');
+    
+    modelSelect.addEventListener('change', function() {
+      selectedModel = modelSelect.value; // Update the selectedModel with the user's choice
+      console.log("User selected model:", selectedModel);  // This will log the new model selection
+    });
+
+    // Optionally, you can set the default model in the dropdown on page load
+    modelSelect.value = selectedModel;  // This ensures the dropdown starts with the correct model
+
+    const sidebar = document.getElementById("sidebar");
+    document.getElementById("toggle-sidebar").onclick = () => {
+      sidebar.classList.toggle("collapsed");
+    };
+
+    // 3 dot button and delete btn functionality
+    function toggleDropdown() {
+      const dropdown = document.getElementById('dropdownMenu');
+      dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.closest('.menu-container')) {
+        document.getElementById('dropdownMenu').style.display = 'none';
+      }
+    }
+
+    function handleDelete() {
+      // Show a confirmation dialog
+      const userConfirmed = window.confirm("Are you sure you want to delete this chat? This action cannot be undone.");
+
+      if (userConfirmed) {
+        // Clear the chat content from the UI
+        document.getElementById("conversation").innerText = "";
+
+        // Clear relevant localStorage
+        localStorage.removeItem("chatSaved");
+
+        console.log("Chat has been deleted and will not be saved.");
+
+        // Reload the page or reset UI
+        window.location.reload();
+      } else {
+        console.log("Chat deletion canceled.");
+      }
+    }
+
+
+    // welcome massage view input options n mute option settings----------------------------------------------------------------------------------------------------------------
+
+    function exitWelcomeUI() {
+      document.getElementById("welcome-container").style.display = "none";
+      document.getElementById("conversation").style.display = "block";
+      document.getElementById("controls").style.display = "flex";
+      isNewChat = false;
+    }
+
+    // document.getElementById("welcome-send-btn").onclick = () => {
+    //   const inputBox = document.getElementById("welcome-input-box");
+    //   const userText = inputBox.value.trim();
+    //   if (!userText) return;
+
+    //   appendMessage("User", userText);
+    //   sendToBackend(userText);
+    //   inputBox.value = "";
+
+    //   // Hide welcome screen, show default input controls
+    //   exitWelcomeUI();
+    // };
+
+    // // Trigger the same logic when Enter key is pressed
+    // document.getElementById("welcome-input-box").addEventListener("keydown", function (event) {
+    //   if (event.key === "Enter") {
+    //     event.preventDefault(); // prevent accidental form submission
+    //     document.getElementById("welcome-send-btn").click(); // simulate click
+    //   }
+    // });
+
+    document.getElementById("welcome-input-box").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const inputBox = document.getElementById("welcome-input-box");
+        const userText = inputBox.value.trim();
+        if (!userText) return;
+
+        appendMessage("User", userText);
+        sendToBackend(userText);
+        inputBox.value = "";
+
+        // Hide welcome screen, show default input controls
+        exitWelcomeUI();
+      }
+    });
+
+    document.getElementById("welcome-mic-btn").onclick = () => {
+      selectedModel = document.getElementById("model").value;
+
+      if (!isListening) {
+        exitWelcomeUI();
+        // Start listening
+        voiceMode = true;
+        isListening = true;
+        recognition?.start();
+
+        // Show the mute button
+        document.getElementById("mute-btn").style.display = "inline-block";
+
+        // Change mic button background to light gray
+        document.getElementById("welcome-mic-btn").style.backgroundColor = "#7d7d81";
+
+      } else {
+        // Stop listening
+        voiceMode = false;
+        isListening = false;
+        recognition?.stop();
+        window.speechSynthesis.cancel();
+
+        // Hide the mute button
+        document.getElementById("welcome-mute-btn").style.display = "none";
+
+        // Reset mic button background
+        document.getElementById("welcome-mic-btn").style.backgroundColor = "#343541";
+
+        // exitWelcomeUI();
+    
+      }
+    };
+
+    document.getElementById("welcome-mute-btn").onclick = () => {
+      window.speechSynthesis.cancel();  // Instantly stops any AI voice
+    };
+
+    document.getElementById("new-chat-btn").onclick = () => {
+      document.getElementById("conversation").innerHTML = "";
+      document.getElementById("welcome-container").style.display = "flex";
+      document.getElementById("controls").style.display = "none";
+      isNewChat = true;
+    };
+
+    // ------------------------------------------------------------------------------------------------------------------------------------------
+
+    function appendMessage(sender, message) {
+      const conversationDiv = document.getElementById("conversation");
+      const msg = document.createElement("div");
+      msg.className = `message ${sender === "User" ? "user" : "ai"}`;
+
+      if (sender === "AI") {
+        const html = marked.parse(message); // Convert Markdown to HTML
+        // msg.innerHTML = `<b>${sender}:</b><br>${html}`;
+        msg.innerHTML = html; // No label
+      } else {
+        // msg.innerHTML = `<b>${sender}:</b> ${message}`;
+        msg.textContent = message;
+      }
+
+      conversationDiv.appendChild(msg);
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+
+    // Doc upload
+    document.getElementById("file-upload").addEventListener("change", async function(event) {
+      const file = event.target.files[0];
+      exitWelcomeUI();
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Show loading message in chat
+      appendMessage("User", `📁 Uploaded: ${file.name}`);
+      // appendMessage("AI", `⏳ Processing "${file.name}"...`);
+
+      const response = await fetch("/upload_doc", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      if (data.content) {
+        appendMessage("AI", `📄 **${file.name}** content:\n\n${data.content}`);
+      } else {
+        appendMessage("AI", `❌ Couldn't read the content of "${file.name}"`);
+      }
+    });
+
+  
+    function sendToBackend(text) {
+      fetch('/ask', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ text: text, model: selectedModel })
+      })
+      .then(res => res.json())
+      .then(data => {
+        appendMessage("AI", data.response);
+        if (voiceMode) speakResponse(data.response);
+      });
+    }
+
+
+    function speakResponse(text) {
+      const speech = new SpeechSynthesisUtterance(text);
+      speech.rate = 1.0;
+      window.speechSynthesis.speak(speech);
+    }
+
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        appendMessage("User", transcript);
+        sendToBackend(transcript);
+      };
+    } else {
+      alert("Speech Recognition not supported in this browser.");
+    }
+
+    document.getElementById("mic-btn").onclick = () => {
+      selectedModel = document.getElementById("model").value;
+
+      if (!isListening) {
+        exitWelcomeUI();
+        // Start listening
+        voiceMode = true;
+        isListening = true;
+        recognition?.start();
+
+        // Show the mute button
+        document.getElementById("mute-btn").style.display = "inline-block";
+
+        // Change mic button background to light gray
+        document.getElementById("mic-btn").style.backgroundColor = "#7d7d81";
+
+      } else {
+        // Stop listening
+        voiceMode = false;
+        isListening = false;
+        recognition?.stop();
+        window.speechSynthesis.cancel();
+
+        // Hide the mute button
+        document.getElementById("mute-btn").style.display = "none";
+
+        // Reset mic button background
+        document.getElementById("mic-btn").style.backgroundColor = "#343541";
+
+        // exitWelcomeUI();
+    
+      }
+    };
+
+    window.addEventListener("beforeunload", function(event) {
+        // Get the current chat content
+        const chatText = Array.from(document.querySelectorAll("#conversation .message"))
+            .map(msg => msg.innerText).join("\n");
+
+        if (chatText.trim() !== "") {
+            // Send the chat data to your Flask backend to save it
+            fetch("/save_chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  // remove first line if id dosent want
+                    user_id: userId, 
+                    chat: chatText
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Chat saved:", data);
+            })
+            .catch(error => {
+                console.error("Error saving chat:", error);
+            });
+        }
+    });
+
+    // document.getElementById("send-btn").onclick = () => {
+    //   const input = document.getElementById("name");
+    //   const text = input.value.trim();
+    //   if (text) {
+    //     appendMessage("User", text);
+    //     sendToBackend(text);
+    //     input.value = "";
+    //   }
+    // };
+
+    document.getElementById("name").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const input = document.getElementById("name");
+        const text = input.value.trim();
+        if (text) {
+          appendMessage("User", text);
+          sendToBackend(text);
+          input.value = "";
+        }
+      }
+    });
+
+    document.getElementById("mute-btn").onclick = () => {
+      window.speechSynthesis.cancel();  // Instantly stops any AI voice
+    };
+
+
+    document.getElementById("name").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") document.getElementById("send-btn").click();
+    });
+
+    // function loadSavedFiles() {
+    //   fetch("/list_conversations")
+    //     .then(res => res.json())
+    //     .then(data => {
+    //       const fileList = document.getElementById("file-list");
+    //       fileList.innerHTML = "";
+    //       if (data.files && data.files.length > 0) {
+    //         data.files.forEach(file => {
+    //           const div = document.createElement("div");
+    //           div.className = "file-link";
+    //           div.innerText = file;
+    //           div.onclick = () => {
+    //             exitWelcomeUI();
+    //             fetch(`/read_conversation?filename=${encodeURIComponent(file)}`)
+    //               .then(res => res.json())
+    //               .then(data => {
+    //                 document.getElementById("conversation").innerText = data.content;
+    //               });
+    //           };
+    //           fileList.appendChild(div);
+    //         });
+    //       } else {
+    //         fileList.innerHTML = "No saved conversations.";
+    //       }
+    //     });
+    // }
+
+    function loadSavedFiles() {
+      const userId = localStorage.getItem("userId");
+      if (!userId) return;
+
+      fetch("/list_conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ user_id: userId })
+      })
+        .then(res => res.json())
+        .then(data => {
+          const fileList = document.getElementById("file-list");
+          fileList.innerHTML = "";
+          if (data.files && data.files.length > 0) {
+            data.files.forEach(file => {
+              const div = document.createElement("div");
+              div.className = "file-link";
+              div.innerText = file;
+              div.onclick = () => {
+                exitWelcomeUI();
+                fetch("/read_conversation", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({ user_id: userId, filename: file })
+                })
+                  .then(res => res.json())
+                  .then(data => {
+                    document.getElementById("conversation").innerText = data.content;
+                  });
+              };
+              fileList.appendChild(div);
+            });
+          } else {
+            fileList.innerHTML = "No saved conversations.";
+          }
+        });
+    }
+
+
+
+    loadSavedFiles();
+
+    // new chat botton functionality
+    // document.getElementById("new-chat-btn").onclick = () => {
+    // window.location.reload();
+    // };
+
+    document.getElementById("new-chat-btn").onclick = () => {
+      const chatText = document.getElementById("conversation").innerText.trim(); // Get chat content
+      const userId = localStorage.getItem("userId"); // Retrieve user ID
+
+      if (chatText && userId) {
+        // Save chat before reloading
+        fetch("/save_chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat: chatText,
+            user_id: userId, // Ensure you're passing the user ID
+          }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.message === "Chat saved successfully") {
+            console.log("Chat saved before starting a new chat.");
+            window.location.reload(); // Reload after saving
+          }
+        })
+        .catch(error => {
+          console.error("Error saving chat:", error);
+        });
+      } else {
+        // If no chat text or user ID, just reload
+        window.location.reload();
+      }
+    };
+
+    // Delete function
+    document.getElementById("delete-chat-btn").onclick = () => {
+      // Show a confirmation dialog
+      const userConfirmed = window.confirm("Are you sure you want to delete this chat? This action cannot be undone.");
+
+      if (userConfirmed) {
+        // Clear the chat content from the UI
+        document.getElementById("conversation").innerText = ""; // Clear chat content
+        
+        // Prevent saving this chat by resetting any relevant localStorage or variables that would trigger the save
+        localStorage.removeItem("chatSaved"); // Remove the saved chat flag if it exists
+
+        console.log("Chat has been deleted and will not be saved.");
+
+        // Optionally, reload the page or reset the UI state to reflect the deletion
+        window.location.reload(); // Reload the page to reset the chat area
+      } else {
+        // If the user cancels, do nothing
+        console.log("Chat deletion canceled.");
+      }
+    };
+
+
+  </script>
+</body>
+</html>
